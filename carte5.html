@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Salomé et Stéphane - Carte</title>
+  <!-- Bootstrap -->
+  <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://js.arcgis.com/4.0beta3/esri/css/main.css">
+
+  <link href="css/carte.css" rel="stylesheet">
+
+  <script src="https://js.arcgis.com/4.0beta3/"></script>
+
+  <script>
+    require(["esri/Map",
+            "esri/Basemap",
+            "esri/views/MapView",
+            "esri/views/SceneView",
+            "esri/widgets/Search",
+            "esri/core/watchUtils",
+
+            "esri/layers/FeatureLayer",
+
+            "esri/PopupTemplate",
+
+            "dojo/query",
+
+            "dojo/domReady!"
+        ], function(Map, Basemap, MapView, SceneView, Search, watchUtils,FeatureLayer,
+            PopupTemplate, 
+            query) {
+
+
+            var template = new PopupTemplate({
+                title: "{info}",
+                content: "<p>{info}</p>" +
+                  "<p>A l'adresse suivante : {name}</p>" ,
+                showAttachments: false
+                /*fieldInfos: [{
+                  fieldName: "MARRIED_CY",
+                  format: {
+                    digitSeparator: true, //Uses a comma separator in large numbers
+                    places: 0 //sets the number of decimal places to 0 and rounds up
+                  }
+                }, {
+                  fieldName: "NEVMARR_CY",
+                  format: {
+                    digitSeparator: true,
+                    places: 0
+                  }
+                }, {
+                  fieldName: "DIVORCD_CY",
+                  format: {
+                    digitSeparator: true,
+                    places: 0
+                  }
+                }]*/
+            });
+
+            // Point du mariage
+            var flMariagePoint = new FeatureLayer({
+                url: "http://services.arcgis.com/jlz2Lc3YYunAFFU2/arcgis/rest/services/stesal_sit/FeatureServer/0",
+                outFields: ["*"],
+                popupTemplate: template
+            });
+
+            // Route mariage
+            var flMariageRoute = new FeatureLayer({
+              url: "http://services.arcgis.com/jlz2Lc3YYunAFFU2/arcgis/rest/services/mariage_route/FeatureServer/0"
+            });
+
+            
+
+            // Map 
+            map = new Map({
+                basemap: "hybrid"
+            });
+            mapView = new MapView({
+                container: "mapViewDiv",
+                map: map,
+                center: [6.8, 46.485],
+                zoom: 13
+            });
+            mapView.popup.anchor = "top";
+
+            map.add(flMariagePoint);
+            //map.add(flMariageRoute);
+
+            // Scene
+            mapScene = new Map({
+                basemap: "hybrid"
+            });
+            sceneView = new SceneView({
+                container: "sceneViewDiv",
+                map: mapScene,
+                //center: [6.8, 46.485],
+                //zoom: 13,
+                camera: {
+                  position: [6.8, 46.300, 4500],
+                  tilt: 80
+                }
+
+            });
+            sceneView.popup.anchor = "top";
+
+            mapScene.add(flMariagePoint);
+            //mapScene.add(flMariageRoute);
+
+            activeView = mapView;
+
+            // Search
+            searchDivNav = createSearchWidget("searchNavDiv");
+            searchWidgetPanel = createSearchWidget("searchDivPanel");
+
+            function createSearchWidget(parentId) {
+                var search = new Search({
+                    view: activeView,
+                    enableHighlight: false
+                    }, parentId);
+                search.startup();
+                // Set active view
+                search.watch(function(property, oldValue, newValue){
+                    if (property === "searchResults") {
+                        search.view = activeView;
+                    }
+                }); 
+                return search;
+            }
+
+            query("li a[data-toggle='tab']").on("click", function(e) {
+                if (e.target.text === "Map") {
+                    activeView = mapView;                    
+                } else {
+                    activeView = sceneView;
+                }
+            });
+
+
+            query("#selectBasemapPanel").on("change", function(e){
+                map.basemap = e.target.options[e.target.selectedIndex].dataset.vector;
+                mapScene.basemap = e.target.options[e.target.selectedIndex].value;
+            });
+        });
+  </script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+
+    <!-- Static navbar -->
+    <nav id="navbar" class="navbar navbar-default navbar-static-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <!--
+                <div class="navbar-info">
+                    <div class="navbar-title text-overflow" data-toggle="modal" data-target="#modalSplash">Salomé <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> Stéphane</div>
+                    <div class="navbar-subtitle text-overflow">Samedi 11 juin 2016</div> 
+                </div>-->
+                
+                <a id="brand" class="navbar-brand" href="#">Salomé <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> Stéphane</a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse navbar-right">
+                <ul class="nav navbar-nav">
+                    <li ><a id="home" class="hidden-xs hidden-sm" href="index.html" aria-controls="2Dtab" aria-expanded="true"  data-tooltip="tip" title="Accueil site du mariage" data-placement="bottom" >Accueil</a></li>
+                    <li ><a id="mapNav" class="hidden-xs hidden-sm" href="#2dTab" aria-controls="2Dtab" aria-expanded="true" role="tab" data-toggle="tab" data-tooltip="tip" title="Vue 2D" data-placement="bottom">Carte</a></li>
+                    <li><a id="sceneNav" class="hidden-xs hidden-sm" href="#3dTab" aria-controls="3Dtab" role="tab" data-toggle="tab" data-tooltip="tip" title="Vue 3D" data-placement="bottom">3D</a></li>  
+                    <!--
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li class="dropdown-header">Nav header</li>
+                            <li><a href="#">Separated link</a></li>
+                            <li><a href="#">One more separated link</a></li>
+                        </ul>
+                    </li>
+                    -->
+                </ul>
+                <!--
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="../navbar/">Default</a></li>
+            <li class="active"><a href="./">Static top <span class="sr-only">(current)</span></a></li>
+            <li><a href="../navbar-fixed-top/">Fixed top</a></li>
+          </ul>
+          -->
+            </div>
+            <!--/.nav-collapse -->
+        </div>
+    </nav>
+  
+    <!-- Map Container  -->
+    <div class="map-container">
+        <div id="tabContainer" class="tab-content">
+            <div id="2dTab" class="tab-pane fade in active" role="tabpanel">
+                <div id="mapViewDiv" class="map-position-absolute"></div>
+            </div>
+            <div id="3dTab" class="tab-pane fade" role="tabpanel">
+                <div id="sceneViewDiv" class="map-position-absolute"></div>
+            </div>
+        </div>
+    </div><!-- /.container -->
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>-->
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+</body>
+
+</html>
